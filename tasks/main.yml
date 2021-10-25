@@ -1,0 +1,21 @@
+---
+# tasks file for timezone
+
+- name: Validate input
+  assert:
+    that:
+      - timezone_name is defined
+      - timezone_name is string
+      - timezone_name | length > 0
+      - (timezone_hwclock is not defined) or timezone_hwclock in ['local', 'UTC']
+    quiet: yes
+
+- name: Install TZData
+  package:
+    name: tzdata
+    state: latest
+
+- name: set timezone info
+  timezone:
+    name: "{{ timezone_name }}"
+    hwclock: "{{ timezone_hwclock | default(omit, true) }}"

@@ -1,0 +1,12 @@
+---
+# defaults file for timezone
+
+# https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
+timezone_name: America/Sao_Paulo
+
+# Whether the hardware clock is in UTC or in local timezone.
+# If not specified, keep current setting.
+# Note that this option is recommended not to change and may
+# fail to configure, especially on virtual environments such
+# as AWS.
+#timezone_hwclock: UTC
