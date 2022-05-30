@@ -2,7 +2,7 @@
 # tasks file for timezone
 
 - name: Validate input
-  assert:
+  ansible.builtin.assert:
     that:
       - timezone_name is defined
       - timezone_name is string
@@ -11,7 +11,7 @@
     quiet: yes
 
 - name: Install TZData
-  package:
+  ansible.builtin.package:
     name: tzdata
     state: latest
 
