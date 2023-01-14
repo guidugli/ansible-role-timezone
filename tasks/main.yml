@@ -16,6 +16,6 @@
     state: latest
 
 - name: Set timezone info
-  timezone:
+  community.general.timezone:
     name: "{{ timezone_name }}"
     hwclock: "{{ timezone_hwclock | default(omit, true) }}"
