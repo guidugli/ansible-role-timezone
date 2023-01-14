@@ -15,7 +15,7 @@
     name: tzdata
     state: latest
 
-- name: set timezone info
+- name: Set timezone info
   timezone:
     name: "{{ timezone_name }}"
     hwclock: "{{ timezone_hwclock | default(omit, true) }}"
