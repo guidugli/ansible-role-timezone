@@ -1,0 +1,24 @@
+---
+- name: Create
+  hosts: all
+  tasks:
+
+    - name: Update Ubuntu/Debian systems
+      ansible.builtin.apt:
+#        upgrade: dist
+        update_cache: true
+        cache_valid_time: 3600
+      when: ansible_pkg_mgr == "apt"
+
+    - name: Install hwclock on Ubuntu/Debian systems
+      ansible.builtin.apt:
+        pkg: util-linux-extra
+        state: present
+      when: ansible_pkg_mgr == "apt"
+
+    - name: Install hwclock on RedHat/Fedora systems
+      ansible.builtin.dnf:
+        pkg: util-linux
+        state: present
+      when: ansible_pkg_mgr == "dnf5"
+
