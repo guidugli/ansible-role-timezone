@@ -3,21 +3,31 @@
   hosts: all
   tasks:
 
+    - name: Check if hwclock is already installed
+      shell: command -v hwclock >/dev/null 2>&1
+      register: hwclock_exists
+      ignore_errors: yes
+
     - name: Update Ubuntu/Debian systems
       ansible.builtin.apt:
 #        upgrade: dist
         update_cache: true
         cache_valid_time: 3600
-      when: ansible_pkg_mgr == "apt"
+      when:
+        - ansible_pkg_mgr == "apt"
 
     - name: Install hwclock on Ubuntu/Debian systems
       ansible.builtin.apt:
         pkg: util-linux-extra
         state: present
-      when: ansible_pkg_mgr == "apt"
+      when:
+        - ansible_pkg_mgr == "apt"
+        - hwclock_exists.rc != 0
 
     - name: Install hwclock on RedHat/Fedora systems
       ansible.builtin.dnf:
         pkg: util-linux
         state: present
-      when: ansible_pkg_mgr == "dnf5"
+      when:
+        - ansible_pkg_mgr == "dnf5"
+        - hwclock_exists.rc != 0
