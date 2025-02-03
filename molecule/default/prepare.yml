@@ -8,6 +8,10 @@
       register: hwclock_exists
       ignore_errors: yes
 
+    - name: Package manager
+      ansible.builtin.debug:
+        var: ansible_pkg_mgr
+
     - name: Update Ubuntu/Debian systems
       ansible.builtin.apt:
 #        upgrade: dist
@@ -29,5 +33,5 @@
         pkg: util-linux
         state: present
       when:
-        - ansible_pkg_mgr == "dnf5"
+        - ansible_pkg_mgr in ["dnf", "dnf5"]
         - hwclock_exists.rc != 0
