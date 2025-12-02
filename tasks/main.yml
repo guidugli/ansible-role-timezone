@@ -11,11 +11,13 @@
     quiet: yes
 
 - name: Install TZData
+  become: yes
   ansible.builtin.package:
     name: tzdata
     state: latest
 
 - name: Set timezone info
+  become: yes
   community.general.timezone:
     name: "{{ timezone_name }}"
     hwclock: "{{ timezone_hwclock | default(omit, true) }}"
