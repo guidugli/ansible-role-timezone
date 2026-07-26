@@ -9,7 +9,8 @@ galaxy_info:
   author: guidugli
   company: Creuzo Tech
   description: >-
-    TBD
+    Install timezone data and configure the system IANA timezone in an
+    idempotent, privilege-externalized Ansible role.
   license: MIT
   min_ansible_version: '2.14'
   platforms:
@@ -25,12 +26,8 @@ galaxy_info:
         - "trixie"
         - "bookworm"
   galaxy_tags:
-    - audit
-    - auditd
+    - timezone
+    - tzdata
     - linux
-    - security
-    - compliance
-    - hardening
-    - logging
-    - cis
-    - monitoring
+    - system
+    - configuration
