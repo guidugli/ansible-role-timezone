@@ -1,0 +1,29 @@
+---
+# Generated file. Do not edit directly.
+# Source template: {{ template_name }}
+
+dependencies: []
+galaxy_info:
+  role_name: timezone
+  namespace: guidugli
+  author: guidugli
+  company: Creuzo Tech
+  description: >-
+    Install timezone data and configure the system IANA timezone in an
+    idempotent, privilege-externalized Ansible role.
+  license: MIT
+  min_ansible_version: '2.14'
+  platforms:
+{% for platform in platforms %}
+    - name: {{ platform.name }}
+      versions:
+{%   for version in platform.versions %}
+        - {{ version | tojson }}
+{%   endfor %}
+{% endfor %}
+  galaxy_tags:
+    - timezone
+    - tzdata
+    - linux
+    - system
+    - configuration

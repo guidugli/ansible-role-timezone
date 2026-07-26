@@ -1,23 +1,65 @@
 ---
 # tasks file for timezone
 
-- name: Validate input
+- name: Validate timezone role inputs
   ansible.builtin.assert:
     that:
       - timezone_name is defined
       - timezone_name is string
       - timezone_name | length > 0
-      - (timezone_hwclock is not defined) or timezone_hwclock in ['local', 'UTC']
-    quiet: yes
+      - timezone_hwclock is not defined or timezone_hwclock in ['local', 'UTC']
+    quiet: true
+  tags:
+    - timezone
+    - validate
 
-- name: Install TZData
-  become: yes
+- name: Install timezone data package
   ansible.builtin.package:
     name: tzdata
-    state: latest
+    state: present
+  tags:
+    - timezone
+    - install
 
-- name: Set timezone info
-  become: yes
+- name: Check whether hwclock is available
+  ansible.builtin.command:
+    cmd: which hwclock
+  register: timezone_hwclock_check
+  changed_when: false
+  failed_when: false
+  tags:
+    - timezone
+    - validate
+
+- name: Normalize timezone aliases
+  ansible.builtin.set_fact:
+    timezone_effective: >-
+      {{
+        'Etc/UTC'
+        if timezone_name == 'UTC'
+        else timezone_name
+      }}
+  changed_when: false
+  tags:
+    - timezone
+    - validate
+
+- name: Configure system timezone using community.general.timezone
   community.general.timezone:
-    name: "{{ timezone_name }}"
+    name: "{{ timezone_effective }}"
     hwclock: "{{ timezone_hwclock | default(omit, true) }}"
+  when: timezone_hwclock_check.rc == 0
+  tags:
+    - timezone
+    - config
+
+- name: Configure timezone in container environments
+  ansible.builtin.file:
+    src: "/usr/share/zoneinfo/{{ timezone_effective }}"
+    dest: /etc/localtime
+    state: link
+    force: true
+  when: timezone_hwclock_check.rc != 0
+  tags:
+    - timezone
+    - config

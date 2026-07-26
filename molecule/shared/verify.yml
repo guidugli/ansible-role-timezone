@@ -1,0 +1,73 @@
+---
+- name: Verify timezone role
+  hosts: all
+  gather_facts: true
+
+  vars:
+    timezone_expected: "{{ timezone_name | default('America/Sao_Paulo') }}"
+
+  tasks:
+    - name: Verify requested zoneinfo file exists
+      ansible.builtin.stat:
+        path: "/usr/share/zoneinfo/{{ timezone_expected }}"
+      register: timezone_zoneinfo_file
+      changed_when: false
+      tags:
+        - timezone
+        - validate
+
+    - name: Verify /etc/localtime exists
+      ansible.builtin.stat:
+        path: /etc/localtime
+      register: timezone_localtime_file
+      changed_when: false
+      tags:
+        - timezone
+        - validate
+
+    - name: Resolve /etc/localtime target
+      ansible.builtin.command:
+        cmd: readlink -f /etc/localtime
+      register: timezone_localtime_target
+      changed_when: false
+      failed_when: false
+      tags:
+        - timezone
+        - validate
+
+    - name: Check for Debian timezone file
+      ansible.builtin.stat:
+        path: /etc/timezone
+      register: timezone_etc_timezone_file
+      changed_when: false
+      tags:
+        - timezone
+        - validate
+
+    - name: Read Debian timezone file when present
+      ansible.builtin.slurp:
+        path: /etc/timezone
+      register: timezone_etc_timezone_content
+      when: timezone_etc_timezone_file.stat.exists
+      changed_when: false
+      tags:
+        - timezone
+        - validate
+
+    - name: Assert timezone configuration evidence exists
+      ansible.builtin.assert:
+        that:
+          - timezone_zoneinfo_file.stat.exists
+          - timezone_localtime_file.stat.exists
+          - >
+            (
+              timezone_localtime_target.stdout is defined
+              and
+              timezone_localtime_target.stdout | length > 0
+            )
+            or
+            timezone_etc_timezone_file.stat.exists
+        quiet: true
+      tags:
+        - timezone
+        - validate

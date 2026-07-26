@@ -1,50 +1,101 @@
-Ansible Role: timezone
-=========
+[![CI](https://github.com/guidugli/ansible-role-timezone/actions/workflows/CI.yml/badge.svg)](https://github.com/guidugli/ansible-role-timezone/actions/workflows/CI.yml)
+[![Release](https://img.shields.io/github/v/tag/guidugli/ansible-role-timezone)](https://github.com/guidugli/ansible-role-timezone/tags)
+[![Ansible Galaxy](https://img.shields.io/badge/ansible--galaxy-guidugli.timezone-blue)](https://galaxy.ansible.com/ui/standalone/roles/guidugli/timezone/)
+[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
-This role sets timezone on RHEL/CentOS, Fedora and Debian/Ubuntu systems.
+# Ansible Role: timezone
 
-Requirements
-------------
+Install timezone data and configure the system IANA timezone on supported Linux hosts. The role is intentionally small,
+idempotent, and execution-context aware: it never enforces privilege escalation itself and relies on the caller to run with
+the required privileges when system-level changes are needed.
 
-Operating system running on bare metal or on a hypervisor virtualization. This role should not be executed on containers.
+## Requirements
 
-Role Variables
---------------
+- Ansible Core 2.14 or newer, as declared by the role metadata.
+- The `community.general` collection version `>=9.0.0` for `community.general.timezone`.
+- The `containers.podman` collection version `>=1.10.0` for Molecule container scenarios.
+- Target hosts must support package management for `tzdata` and operating system timezone configuration files or services.
 
-**Available variables are listed below, along with default values (see defaults/main.yml):**
+## Variables
 
-    timezone_name: America/Sao_Paulo
+### `timezone_name`
 
-Specify desired timezone. Refer to the following URL to consult available timezones: [List of time zones](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones)
+- Type: `str`
+- Default: `America/Sao_Paulo`
+- Required: no
 
-    #timezone_hwclock: 
+IANA timezone name applied by the role. Use values such as `UTC`, `Etc/UTC`, `America/Sao_Paulo`, or another valid entry
+from the IANA time zone database. The role validates that the value is a non-empty string before applying it.
 
-Whether the hardware clock is in UTC or in local timezone. If not specified (default), keep current setting.
-Note that this option is recommended not to change and may fail to configure, especially on virtual environments such as AWS.
+### `timezone_hwclock`
 
+- Type: `str`
+- Default: undefined
+- Required: no
+- Choices: `UTC`, `local`
 
-Dependencies
-------------
+Optional hardware clock mode passed to `community.general.timezone`. Leave this variable undefined to preserve the current
+hardware clock configuration. This setting can be unsupported or undesirable in some virtualized and cloud environments.
 
-No dependencies.
+## Example Playbook
 
-Example Playbook
-----------------
+```yaml
+---
+- name: Configure host timezone
+  hosts: all
+  become: true
+  roles:
+    - role: guidugli.timezone
+      vars:
+        timezone_name: UTC
+```
 
-Including an example of how to use your role (for instance, with variables passed in as parameters) is always nice for users too:
+To preserve the current hardware clock mode, omit `timezone_hwclock`. To set it explicitly, pass one of the supported
+values:
 
-    - hosts: servers
+```yaml
+---
+- name: Configure host timezone and hardware clock mode
+  hosts: all
+  become: true
+  roles:
+    - role: guidugli.timezone
       vars:
         timezone_name: America/Sao_Paulo
-      roles:
-         - { role: guidugli.timezone }
+        timezone_hwclock: UTC
+```
 
-License
--------
+## Molecule Testing
 
-MIT / BSD
+The role uses shared Molecule playbooks under `molecule/shared` and scenario-specific container setup under
+`molecule/default` and `molecule/systemd`.
 
-Author Information
-------------------
+Run the standard scenario:
 
-This role was created in 2020 by Carlos Guidugli.
+```bash
+molecule test -s default
+```
+
+Run the systemd-oriented scenario:
+
+```bash
+molecule test -s systemd
+```
+
+The shared verify play checks that the requested zoneinfo file exists and that the configured timezone is reflected through
+`/etc/localtime` or Debian-style `/etc/timezone` evidence.
+
+## Execution Notes
+
+### Privilege model
+
+This role does not set `become`, `become_user`, or `become_method` in role tasks. Installing `tzdata` and changing system
+timezone state are privileged operations on normal hosts, so callers should enable privilege escalation externally, as shown
+in the example playbooks.
+
+### Container and systemd behavior
+
+Molecule containers execute as root and therefore do not require role-level privilege escalation. Timezone configuration may
+interact with system facilities such as `/etc/localtime`, `/etc/timezone`, or systemd-backed timezone tooling depending on
+the target distribution and container capabilities. The systemd Molecule scenario exists to exercise roles in a
+systemd-capable container context without embedding systemd assumptions in the role tasks.

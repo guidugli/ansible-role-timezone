@@ -1,37 +1,38 @@
 ---
-- name: Create
+- name: Shared prepare (bootstrap python + essentials)
   hosts: all
+  gather_facts: false
+  become: false
+
   tasks:
+    - name: Detect OS via /etc/os-release (works without python)
+      ansible.builtin.raw: cat /etc/os-release
+      register: osr
+      changed_when: false
 
-    - name: Check if hwclock is already installed
-      shell: command -v hwclock >/dev/null 2>&1
-      register: hwclock_exists
-      ignore_errors: yes
+    - name: Install python on Debian/Ubuntu
+      ansible.builtin.raw: >
+        /bin/sh -c 'set -e;
+        export DEBIAN_FRONTEND=noninteractive;
+        apt-get update;
+        apt-get install -y --no-install-recommends python3 python3-apt sudo ca-certificates iproute2;
+        rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*'
+      when: "'ID=debian' in osr.stdout or 'ID=ubuntu' in osr.stdout"
+      changed_when: true
 
-    - name: Package manager
-      ansible.builtin.debug:
-        var: ansible_pkg_mgr
+    - name: Install python on Fedora
+      ansible.builtin.raw: >
+        /bin/sh -c 'set -e;
+        dnf install -y python3 python3-dnf sudo ca-certificates iproute;
+        dnf clean all;
+        rm -rf /var/cache/dnf/* /tmp/* /var/tmp/*'
+      when: "'ID=fedora' in osr.stdout"
+      changed_when: true
 
-    - name: Update Ubuntu/Debian systems
-      ansible.builtin.apt:
-#        upgrade: dist
-        update_cache: true
-        cache_valid_time: 3600
-      when:
-        - ansible_pkg_mgr == "apt"
-
-    - name: Install hwclock on Ubuntu/Debian systems
-      ansible.builtin.apt:
-        pkg: util-linux-extra
-        state: present
-      when:
-        - ansible_pkg_mgr == "apt"
-        - hwclock_exists.rc != 0
-
-    - name: Install hwclock on RedHat/Fedora systems
-      ansible.builtin.dnf:
-        pkg: util-linux
-        state: present
-      when:
-        - ansible_pkg_mgr in ["dnf", "dnf5"]
-        - hwclock_exists.rc != 0
+- name: Check for role extra tasks
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Include shared prepare tasks if present
+      ansible.builtin.include_tasks: ../shared/prepare_tasks.yml
+      when: lookup('ansible.builtin.fileglob', '../shared/prepare_tasks.yml', wantlist=True) | length > 0
